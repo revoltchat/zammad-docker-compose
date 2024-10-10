@@ -1,5 +1,15 @@
 # Welcome to Zammad
 
+> [!IMPORTANT]  
+> This is a fork of Zammad's compose files with some opinionated defaults and documentation missing from Zammad's end.
+
+> [!CAUTION]
+> I cannot stress this enough, do not use Zammad's documentation for backup/restore!
+>
+> Instructions are provided below which won't make you trip up and screw up your install.
+>
+> Zammad seems to explicitly [not support this use-case](https://github.com/zammad/zammad-docker-compose/issues/68#issuecomment-381327989) and have done nothing since to rectify their documentation.
+
 Zammad is a web based open source helpdesk/ticket system with many features
 to manage customer communication via several channels like telephone, facebook,
 twitter, chat and emails. It is distributed under the GNU AFFERO General Public
@@ -13,9 +23,42 @@ This repository is the starting point if you want to:
 - deploy Zammad in a containerized production environment
 - test the current `stable` or `develop` versions of Zammad
 
-## Getting started
+## Backups
 
-[Learn more on Zammad’s documentation](https://docs.zammad.org/en/latest/install/docker-compose.html)
+Zammad comes with a built-in tool that creates backups for you, however it will not help you restore your installation in the case of Docker-based installs.
+
+As part of your regular backups, make a copy of:
+- `/var/lib/docker/volumes/zammad_zammad-backup/_data/` or the latest `.psql.gz` file available
+- `/var/lib/docker/volumes/zammad_zammad-storage`
+
+### Restoring
+
+Clone this repository and restore your `.env` file (which contains version information too!).
+
+Restore the `/var/lib/docker/volumes/zammad_zammad-storage` volume from old host.
+
+Restoring a database backup:
+
+```bash
+# make sure everything is stopped
+docker compose down
+
+# start the db
+docker compose up -d zammad-postgresql
+
+# decompress your database dump
+gunzip -c 20241010101010_zammad_db.psql.gz > 20241010101010_zammad_db.psql
+
+# wipe database if exists
+docker compose exec zammad-postgresql dropdb zammad_production -U zammad
+docker compose exec zammad-postgresql createdb zammad_production -U zammad
+
+# restore to postgres database
+docker exec -i zammad-zammad-postgresql-1 psql -U zammad -d zammad_production < /path/to/your/20241010101010_zammad_db.psql
+
+# start everything
+docker compose up -d
+```
 
 ## Upgrading
 
